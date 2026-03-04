@@ -1,3 +1,6 @@
+'use client';
+import {useRouter} from 'next/navigation';
+
 const mockUsers = [
   {
     id: 1,
@@ -50,6 +53,7 @@ const mockUsers = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   return (
     <div className="min-h-screen w-full bg-background text-foreground" style={{minHeight: '100vh'}}>
       {/* Modern Clean Header */}
@@ -227,8 +231,10 @@ export default function Home() {
               <p className="text-muted mb-8 text-xl max-w-lg mx-auto leading-relaxed font-medium">
                 Ready to showcase your singing talent and connect with fellow performers around the world?
               </p>
-              <button className="btn btn-primary px-12 py-4 text-xl font-black relative overflow-hidden group/cta tracking-wide">
-                <span className="relative z-10">Add Your Profile</span>
+              <button 
+              className="btn btn-primary px-12 py-4 text-xl font-black relative overflow-hidden group/cta tracking-wide"
+              onClick={() => router.push('/login')}>
+                <span className="relative z-10">Log back in</span>
                 <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover/cta:scale-x-100 transition-transform duration-300 origin-center"></div>
               </button>
             </div>
