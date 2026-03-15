@@ -203,14 +203,16 @@ p {
   transition: var(--transition);
 }
 
-.card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: var(--shadow-2xl);
-  border-color: var(--primary);
-}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-2xl);
+    border-color: var(--primary);
+  }
 
-.card:hover::before {
-  opacity: 1;
+  .card:hover::before {
+    opacity: 1;
+  }
 }
 
 /* Enhanced button styling with better shadows */
@@ -368,19 +370,4 @@ a {
 
 a:hover {
   color: var(--primary-light);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin: 1rem 0;
-  transition: all var(--transition);
-}
-
-.card:hover {
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
-  border-color: var(--primary);
 }
