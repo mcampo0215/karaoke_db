@@ -1,8 +1,10 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import HeroSection from './components/HeroSection';
 import StatsSection from './components/StatsSection';
 import UsersGrid from './components/UsersGrid';
+import JoinCommunity from './components/JoinCommunity';
 import { User } from './types/user';
 
 export default function Home() {
@@ -20,46 +22,79 @@ export default function Home() {
     async function loadUsers() {
       try {
         setLoading(true);
+        setError('');
+
         const res = await fetch('/api/users', { cache: 'no-store' });
-        if (!res.ok) throw new Error('Request failed');
+        if (!res.ok) {
+          throw new Error('Request failed: ' + res.status);
+        }
+
         const data = await res.json();
-        if (!ignore) setUsers(Array.isArray(data) ? data : []);
-      } catch {
-        if (!ignore) setError('Could not load performers.');
+        if (!ignore) {
+          setUsers(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError('Could not load performers.');
+          setUsers([]);
+        }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
 
     loadUsers();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  async function handleToggle(userId: number) {
+  async function handleTogglePlaylist(userId: number) {
     if (expandedUserId === userId) {
       setExpandedUserId(null);
       return;
     }
 
     setExpandedUserId(userId);
-    if (fullSongsByUser[userId]) return;
+    if (fullSongsByUser[userId]) {
+      return;
+    }
 
     try {
       setLoadingSongsUserId(userId);
-      const res = await fetch(`/api/songs?userId=${userId}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Request failed');
+      setSongsErrorByUser((prev) => ({ ...prev, [userId]: '' }));
+
+      const res = await fetch('/api/songs?userId=' + userId, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('Request failed: ' + res.status);
+      }
+
       const data = await res.json();
       const songs = Array.isArray(data.songs) ? data.songs : [];
-      setFullSongsByUser((prev) => ({ ...prev, [userId]: songs }));
-    } catch {
-      setSongsErrorByUser((prev) => ({ ...prev, [userId]: 'Could not load full playlist.' }));
+
+      setFullSongsByUser((prev) => ({
+        ...prev,
+        [userId]: songs,
+      }));
+    } catch (err) {
+      setSongsErrorByUser((prev) => ({
+        ...prev,
+        [userId]: 'Could not load full playlist.',
+      }));
     } finally {
       setLoadingSongsUserId(null);
     }
   }
 
-  if (loading) return <div className="min-h-screen grid place-items-center">Loading performers...</div>;
-  if (error) return <div className="min-h-screen grid place-items-center">{error}</div>;
+  if (loading) {
+    return <div className="min-h-screen grid place-items-center">Loading performers...</div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen grid place-items-center">{error}</div>;
+  }
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
@@ -73,9 +108,10 @@ export default function Home() {
             loadingSongsUserId={loadingSongsUserId}
             songsErrorByUser={songsErrorByUser}
             fullSongsByUser={fullSongsByUser}
-            onToggle={handleToggle}
+            onToggle={handleTogglePlaylist}
           />
         </div>
+        <JoinCommunity />
       </div>
     </div>
   );
