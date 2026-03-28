@@ -4,7 +4,7 @@ import pool from "../../../../lib/db";
 export async function GET(request) {
     try {
         const userIdCookie = request.cookies.get('karaoke_user_id');
-        const userId = userIdCookie?.value;
+        const userId = Number(userIdCookie?.value);
 
         if (!userId) {
             return NextResponse.json(

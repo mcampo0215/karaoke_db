@@ -6,14 +6,12 @@ export default function HeroSection() {
         backgroundSize: '24px 24px'
       }} />
       <div className="relative max-w-7xl mx-auto px-4 py-20">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight max-w-4xl mx-auto leading-tight">
-            Discover Amazing
-            <span className="block text-primary">Karaoke Performers</span>
+            Karaoke with Friends
+            <span className="block text-primary">Catalog</span>
           </h1>
-          <p className="text-muted text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium mb-12">
-            Connect with talented singers, explore their signature songs, and find your next karaoke inspiration
-          </p>
+         
         </div>
       </div>
     </div>
