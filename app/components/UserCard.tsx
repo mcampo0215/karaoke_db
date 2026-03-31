@@ -6,7 +6,7 @@ type UserCardProps = {
     expanded: boolean;
     loadingSongs: boolean;
     songsError?: string;
-    extraSongs: string[];
+    playlists: string[];
     onToggle: (userId: number) => void;
 };
 
@@ -16,7 +16,7 @@ export default function UserCard({
     expanded,
     loadingSongs,
     songsError,
-    extraSongs,
+    playlists,
     onToggle,
 }: UserCardProps) {
 
@@ -35,8 +35,8 @@ export default function UserCard({
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="text-center p-6 bg-background rounded-2xl border border-light group-hover:border-primary/30 transition-all">
-          <div className="text-4xl font-black text-primary mb-2">{user.songsCount}</div>
-          <div className="text-xs text-muted font-bold uppercase tracking-[0.1em]">Songs</div>
+          <div className="text-4xl font-black text-primary mb-2">{user.playlistsCount}</div>
+          <div className="text-xs text-muted font-bold uppercase tracking-[0.1em]">Playlists</div>
         </div>
         <div className="text-center p-6 bg-background rounded-2xl border border-light group-hover:border-primary/30 transition-all">
           <div className="text-4xl mb-2">🏆</div>
@@ -47,16 +47,16 @@ export default function UserCard({
       <div className="mb-8">
         <h4 className="font-bold mb-6 text-foreground flex items-center gap-2">
           <span className="text-primary">♪</span>
-          Signature Songs
+          Current Playlists
         </h4>
         <div className="space-y-3">
-          {user.topSongs.map((song, songIndex) => (
-            <div key={song} className="flex items-center gap-4 p-4 rounded-xl bg-background border border-light">
+          {user.topPlaylists.map((playlist, playlistIndex) => (
+            <div key={playlist} className="flex items-center gap-4 p-4 rounded-xl bg-background border border-light">
               <div className="w-10 h-10 bg-surface-elevated rounded-xl flex items-center justify-center text-sm font-bold text-primary border border-border">
-                {songIndex + 1}
+                {playlistIndex + 1}
               </div>
               <div className="flex-1">
-                <span className="text-sm font-semibold block">{song}</span>
+                <span className="text-sm font-semibold block">{playlist}</span>
               </div>
             </div>
           ))}
@@ -69,24 +69,23 @@ export default function UserCard({
       >
         {expanded ? 'Hide Full Playlist' : 'View Full Playlist'}
       </button>
-
       {expanded && (
         <div className="mt-6 border-t border-light pt-5">
           <h5 className="font-bold mb-3 text-foreground">Full Playlist</h5>
           {loadingSongs ? (
-            <p className="text-sm text-muted">Loading songs...</p>
+            <p className="text-sm text-muted">Loading playlists...</p>
           ) : songsError ? (
             <p className="text-sm text-error">{songsError}</p>
-          ) : extraSongs.length > 0 ? (
+          ) : playlists.length > 0 ? (
             <div className="space-y-2">
-              {extraSongs.map((song, i) => (
-                <div key={`${song}-${i}`} className="text-sm p-3 rounded-lg bg-background border border-light">
-                  {song}
+              {playlists.map((playlist, i) => (
+                <div key={`${playlist}-${i}`} className="text-sm p-3 rounded-lg bg-background border border-light">
+                  {playlist}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted">No additional songs beyond the top 3.</p>
+            <p className="text-sm text-muted">No additional playlists.</p>
           )}
         </div>
       )}

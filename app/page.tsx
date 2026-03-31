@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import HeroSection from './components/HeroSection';
+import HomeSection from './components/HomeSection';
 import StatsSection from './components/StatsSection';
 import UsersGrid from './components/UsersGrid';
 import JoinCommunity from './components/JoinCommunity';
@@ -12,9 +12,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
-  const [fullSongsByUser, setFullSongsByUser] = useState<Record<number, string[]>>({});
-  const [loadingSongsUserId, setLoadingSongsUserId] = useState<number | null>(null);
-  const [songsErrorByUser, setSongsErrorByUser] = useState<Record<number, string>>({});
+  //const [fullSongsByUser, setFullSongsByUser] = useState<Record<number, string[]>>({});
+  //const [loadingSongsUserId, setLoadingSongsUserId] = useState<number | null>(null);
+  //const [songsErrorByUser, setSongsErrorByUser] = useState<Record<number, string>>({});
+  // This holds the "full playlist list" (playlist names) per userId
+  const [playlistsByUserId, setPlaylistsByUserId] = useState<Record<number, string[]>>({});
+  const [loadingPlaylistsUserId, setLoadingPlaylistsUserId] = useState<number | null>(null);
+  const [playlistsErrorByUserId, setPlaylistsErrorByUserId] = useState<Record<number, string>>({});
 
   useEffect(() => {
     let ignore = false;
@@ -35,7 +39,7 @@ export default function Home() {
         }
       } catch (err) {
         if (!ignore) {
-          setError('Could not load performers.');
+          setError('Could not load home screen.');
           setUsers([]);
         }
       } finally {
@@ -58,13 +62,13 @@ export default function Home() {
     }
 
     setExpandedUserId(userId);
-    if (fullSongsByUser[userId]) {
+    if (playlistsByUserId[userId]) {
       return;
     }
 
     try {
-      setLoadingSongsUserId(userId);
-      setSongsErrorByUser((prev) => ({ ...prev, [userId]: '' }));
+      setLoadingPlaylistsUserId(userId);
+      setPlaylistsErrorByUserId((prev) => ({ ...prev, [userId]: '' }));
 
       const res = await fetch('/api/songs?userId=' + userId, { cache: 'no-store' });
       if (!res.ok) {
@@ -72,24 +76,24 @@ export default function Home() {
       }
 
       const data = await res.json();
-      const songs = Array.isArray(data.songs) ? data.songs : [];
+      const playlists = Array.isArray(data.playlists) ? data.playlists : [];
 
-      setFullSongsByUser((prev) => ({
+      setPlaylistsByUserId((prev) => ({
         ...prev,
-        [userId]: songs,
+        [userId]: playlists,
       }));
     } catch (err) {
-      setSongsErrorByUser((prev) => ({
+      setPlaylistsErrorByUserId((prev) => ({
         ...prev,
         [userId]: 'Could not load full playlist.',
       }));
     } finally {
-      setLoadingSongsUserId(null);
+      setLoadingPlaylistsUserId(null);
     }
   }
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center">Loading performers...</div>;
+    return <div className="min-h-screen grid place-items-center">Loading friends...</div>;
   }
 
   if (error) {
@@ -98,20 +102,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <HeroSection />
+      <HomeSection />
       <div className="max-w-7xl mx-auto px-4 pb-20">
         <StatsSection users={users} />
         <div className="mt-16">
+          <JoinCommunity />
           <UsersGrid
             users={users}
             expandedUserId={expandedUserId}
-            loadingSongsUserId={loadingSongsUserId}
-            songsErrorByUser={songsErrorByUser}
-            fullSongsByUser={fullSongsByUser}
+            loadingPlaylistsUserId={loadingPlaylistsUserId}
+            playlistsErrorByUserId={playlistsErrorByUserId}
+            playlistsByUserId={playlistsByUserId}
             onToggle={handleTogglePlaylist}
           />
         </div>
-        <JoinCommunity />
       </div>
     </div>
   );

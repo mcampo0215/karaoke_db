@@ -11,36 +11,43 @@ export async function GET() {
             FROM users u
             LEFT JOIN karaoke_interest ki ON u.user_id = ki.user_id
             GROUP BY u.user_id`
+        ); 
+        
+        const[playlists] = await pool.query(
+            `SELECT u.user_id AS id,
+                CONCAT(u.first_name, ' ', u.last_name) AS name,
+                COUNT(p.playlist_id) AS playlistsCount
+            FROM users u
+            LEFT JOIN playlists p ON u.user_id = p.user_id
+            GROUP BY u.user_id`
         );
 
-        //all song titles
-        const [songs] = await pool.query(
-            `SELECT p.user_id, s.song_title
+        //all playlist names
+        const [playlistRows] = await pool.query(
+            `SELECT p.user_id, p.playlist_name
             FROM playlists p
-            JOIN song_playlists sp ON sp.playlist_id = p.playlist_id
-            JOIN songs s ON s.song_id = sp.song_id
-            ORDER BY p.user_id, s.song_id`
+            ORDER BY p.user_id, created_at DESC, p.playlist_id DESC`
         );
 
-        //top 3 songs per user
-        const topSongsByUser = new Map();
-        for (const row of songs) {
+        //top 3 playlists per user
+        const topPlaylistsByUser = new Map();
+        for (const row of playlistRows) {
             const userId = Number(row.user_id);
-            const title = row.song_title;
+            const name = row.playlist_name;
 
-            if (!topSongsByUser.has(userId)) topSongsByUser.set(userId, []);
-            const list = topSongsByUser.get(userId);
+            if (!topPlaylistsByUser.has(userId)) topPlaylistsByUser.set(userId, []);
+            const list = topPlaylistsByUser.get(userId);
 
-            if (list.length < 3 && !list.includes(title)) {
-                list.push(title);
+            if (list.length < 3 && !list.includes(name)) {
+                list.push(name);
             }
         }
 
-        const payload = users.map((u) => ({
+        const payload = playlists.map((u) => ({
             id: Number(u.id),
             name: u.name,
-            songsCount: Number(u.songsCount),
-            topSongs: topSongsByUser.get(Number(u.id)) || [],
+            playlistsCount: Number(u.playlistsCount),
+            topPlaylists: topPlaylistsByUser.get(Number(u.id)) || [],
         }));
         
         return NextResponse.json(payload);
