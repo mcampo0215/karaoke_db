@@ -1,15 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
+  const accountCreated = searchParams.get('created') === '1';
+
+  function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'Login failed';
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,9 +35,20 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      router.push('/dashboard');
-    } catch (err: any) {
-      setFormError(err.message || 'Login failed');
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(
+          'karaoke-demo-user',
+          JSON.stringify({
+            id: data.user?.id ?? null,
+            username: data.user?.username ?? username,
+            name: data.user?.name ?? username,
+          })
+        );
+      }
+
+      router.push('/user');
+    } catch (error: unknown) {
+      setFormError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -41,6 +58,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <div className="w-full max-w-xl p-10 space-y-6 bg-surface rounded-xl shadow-lg">
         <h2 className="text-2xl font-bold text-center text-primary">Sign In</h2>
+        {accountCreated && (
+          <p className="text-center text-sm text-green-600">
+            Account created. Sign in with your new username and password.
+          </p>
+        )}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {formError && <p className="text-center text-sm text-red-500">{formError}</p>}
@@ -84,6 +106,17 @@ export default function LoginPage() {
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
+
+        <p className="text-center text-sm text-muted">
+          Need an account?{' '}
+          <button
+            type="button"
+            className="font-semibold text-primary transition-colors hover:text-primary/80"
+            onClick={() => router.push('/signup')}
+          >
+            Sign up
+          </button>
+        </p>
       </div>
     </div>
   );

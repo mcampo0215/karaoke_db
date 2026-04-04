@@ -14,7 +14,7 @@ export async function GET(request) {
         }
 
         const [rows] = await pool.query(
-            `SELECT email_address, username FROM USERS
+            `SELECT user_id, first_name, last_name, email_address, username FROM users
             WHERE user_id = ?`,
             [userId]
         );
@@ -29,7 +29,13 @@ export async function GET(request) {
         return NextResponse.json(
             {
                 ok: true,
-                user: rows[0],
+                user: {
+                    id: Number(rows[0].user_id),
+                    first_name: rows[0].first_name,
+                    last_name: rows[0].last_name,
+                    email_address: rows[0].email_address,
+                    username: rows[0].username,
+                },
             },
             { status: 200 }
         );
@@ -54,26 +60,33 @@ export async function DELETE(request) {
         }
 
         const body = await request.json();
-        const username = body.username;
+        const username = body.username?.trim();
+
+        if (!username) {
+            return NextResponse.json(
+                { error: 'Username is required' },
+                { status: 400 }
+            );
+        }
 
         const [rows] = await pool.query(
-            `SELECT * FROM users
-            WHERE username = ?`,
-            [username]
+            `SELECT user_id FROM users
+            WHERE user_id = ? AND username = ?`,
+            [userId, username]
         );
 
-        if (!userId) {
+        if (!rows.length) {
             return NextResponse.json(
                 { error: 'User not found' },
                 { status: 404 }
             );
         }
 
-        const [result] = await pool.query(
+        await pool.query(
             `DELETE FROM users
-            WHERE username = ?`,
-            [username]
-        )
+            WHERE user_id = ?`,
+            [userId]
+        );
 
         return NextResponse.json(
             {message: 'User deleted'},
@@ -99,7 +112,40 @@ export async function PATCH(request) {
         }
 
         const body = await request.json();
-        const newUsername = body.username;
+        const newUsername = body.username?.trim();
+
+        if (!newUsername) {
+            return NextResponse.json(
+                { error: 'Username is required' },
+                { status: 400 }
+            );
+        }
+
+        const [currentRows] = await pool.query(
+            `SELECT username FROM users
+            WHERE user_id = ?`,
+            [userId]
+        );
+
+        if (!currentRows.length) {
+            return NextResponse.json(
+                { error: 'User not found' },
+                { status: 404 }
+            );
+        }
+
+        if (currentRows[0].username === newUsername) {
+            return NextResponse.json(
+                {
+                    ok: true,
+                    message: 'Username already matches your current one',
+                    user: {
+                        username: newUsername,
+                    },
+                },
+                { status: 200 }
+            );
+        }
 
         const [existing] = await pool.query(
             `SELECT user_id FROM users
@@ -114,7 +160,7 @@ export async function PATCH(request) {
             );
         }
 
-        const [result] = await pool.query(
+        await pool.query(
             `UPDATE users
             SET username = ?
             WHERE user_id = ?`,
@@ -124,7 +170,10 @@ export async function PATCH(request) {
         return NextResponse.json(
             {
                 ok: true,
-                message: 'Username sucessfully updated'
+                message: 'Username successfully updated',
+                user: {
+                    username: newUsername,
+                },
             },
             { status: 200 }
         )

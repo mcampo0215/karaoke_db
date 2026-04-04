@@ -4,11 +4,18 @@ import pool from "../../../../lib/db";
 export async function POST(request) {
     try {
         const body = await request.json();
-        const email = body.email;
-        const username = body.username;
-        const password = body.password;
-        const first_name = body.first_name;
-        const last_name = body.last_name;
+        const email = body.email?.trim();
+        const username = body.username?.trim();
+        const password = body.password?.trim();
+        const first_name = body.first_name?.trim();
+        const last_name = body.last_name?.trim();
+
+        if (!email || !username || !password || !first_name || !last_name) {
+            return NextResponse.json(
+                {error: 'Email, username, password, first name, and last name are required'},
+                {status: 400}
+            );
+        }
 
         const [existing] = await pool.query(
             'SELECT user_id FROM users WHERE username = ?', [username]
@@ -20,7 +27,7 @@ export async function POST(request) {
             )
         }
 
-        const [result] = await pool.query(
+        await pool.query(
             'INSERT INTO users(email_address, username, password, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
             [email, username, password, first_name, last_name]
         );
@@ -35,4 +42,3 @@ export async function POST(request) {
         return NextResponse.json({error: 'Sign up failed'}, {status: 500});
     }
 }
-
