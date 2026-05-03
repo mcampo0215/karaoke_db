@@ -28,11 +28,9 @@ export async function GET(request) {
           p.playlist_name,
           p.mood_tag,
           p.created_at,
-          COUNT(sp.song_id) AS song_count
+          GetPlaylistSongCount(p.playlist_id) AS song_count
        FROM playlists p
-       LEFT JOIN song_playlists sp ON sp.playlist_id = p.playlist_id
        WHERE p.user_id = ?
-       GROUP BY p.playlist_id, p.playlist_name, p.mood_tag, p.created_at
        ORDER BY p.created_at DESC, p.playlist_id DESC`,
       [userId]
     );

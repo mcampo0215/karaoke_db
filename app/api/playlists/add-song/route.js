@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '../../../../lib/db';
 
+
+//function for CREATE Operation - adding a song a playlist - meaning song-playlist table
 export async function POST(request) {
   try {
     const cookieUserId = request.cookies.get('karaoke_user_id')?.value;
@@ -41,7 +43,7 @@ export async function POST(request) {
     if (!songRows.length) {
       return NextResponse.json({ error: 'Song not found' }, { status: 404 });
     }
-
+    // CRUD  for song-playlist - CREATE operations 
     const [existingRows] = await pool.query(
       `SELECT 1
        FROM song_playlists
@@ -53,7 +55,7 @@ export async function POST(request) {
     if (existingRows.length) {
       return NextResponse.json({ ok: true, message: 'Song already in playlist' });
     }
-
+    // INSERT Query 
     await pool.query(
       `INSERT INTO song_playlists (playlist_id, song_id)
        VALUES (?, ?)`,

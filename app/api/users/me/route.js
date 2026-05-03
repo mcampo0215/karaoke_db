@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import pool from "../../../../lib/db";
 
+// GET request for user info - retrieves the logged-in user's information based on the user ID stored in the cookie. 
+// Returns the user's ID, first name, last name, email address, and username.
 export async function GET(request) {
     try {
         const userIdCookie = request.cookies.get('karaoke_user_id');
@@ -33,6 +35,7 @@ export async function GET(request) {
                     id: Number(rows[0].user_id),
                     first_name: rows[0].first_name,
                     last_name: rows[0].last_name,
+                    email: rows[0].email_address,
                     email_address: rows[0].email_address,
                     username: rows[0].username,
                 },
@@ -47,6 +50,8 @@ export async function GET(request) {
     };
 }
 
+//DELETE request for user deletion - 
+// deletes the logged-in user's account based on the user ID stored in the cookie and the username provided in the request body.
 export async function DELETE(request) {
     try {
         const userIdCookie = request.cookies.get('karaoke_user_id');
@@ -98,6 +103,8 @@ export async function DELETE(request) {
         return NextResponse.json({error: 'Failed to delete user account'}, {status: 500});
     }
 }
+//PATCH request for user update - 
+// updates the logged-in user's profile fields (username, first name, last name, and email).
 export async function PATCH(request) {
 
     try {
@@ -112,17 +119,13 @@ export async function PATCH(request) {
         }
 
         const body = await request.json();
-        const newUsername = body.username?.trim();
-
-        if (!newUsername) {
-            return NextResponse.json(
-                { error: 'Username is required' },
-                { status: 400 }
-            );
-        }
+        const requestedUsername = body.username?.trim();
+        const requestedFirstName = body.first_name?.trim();
+        const requestedLastName = body.last_name?.trim();
+        const requestedEmail = body.email_address?.trim().toLowerCase() || body.email?.trim().toLowerCase();
 
         const [currentRows] = await pool.query(
-            `SELECT username FROM users
+            `SELECT username, first_name, last_name, email_address FROM users
             WHERE user_id = ?`,
             [userId]
         );
@@ -134,45 +137,60 @@ export async function PATCH(request) {
             );
         }
 
-        if (currentRows[0].username === newUsername) {
+        const currentUser = currentRows[0];
+
+        const newUsername = requestedUsername || currentUser.username;
+        const newFirstName = requestedFirstName || currentUser.first_name;
+        const newLastName = requestedLastName || currentUser.last_name;
+        const newEmail = requestedEmail || currentUser.email_address;
+
+        if (!newUsername || !newFirstName || !newLastName || !newEmail) {
             return NextResponse.json(
-                {
-                    ok: true,
-                    message: 'Username already matches your current one',
-                    user: {
-                        username: newUsername,
-                    },
-                },
-                { status: 200 }
+                { error: 'Username, first name, last name, and email are required' },
+                { status: 400 }
             );
         }
 
-        const [existing] = await pool.query(
-            `SELECT user_id FROM users
-            WHERE username = ?`,
-            [newUsername]
-        )
-
-        if (existing.length > 0) {
+        const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail);
+        if (!isValidEmail) {
             return NextResponse.json(
-                { error: 'Username already taken' },
-                { status: 409 }
+                { error: 'Please provide a valid email address' },
+                { status: 400 }
             );
+        }
+
+        if (newUsername !== currentUser.username) {
+            const [existing] = await pool.query(
+                `SELECT user_id FROM users
+                WHERE username = ? AND user_id <> ?`,
+                [newUsername, userId]
+            );
+
+            if (existing.length > 0) {
+                return NextResponse.json(
+                    { error: 'Username already taken' },
+                    { status: 409 }
+                );
+            }
         }
 
         await pool.query(
             `UPDATE users
-            SET username = ?
+            SET username = ?, first_name = ?, last_name = ?, email_address = ?
             WHERE user_id = ?`,
-            [newUsername, userId]
+            [newUsername, newFirstName, newLastName, newEmail, userId]
         );
 
         return NextResponse.json(
             {
                 ok: true,
-                message: 'Username successfully updated',
+                message: 'Profile successfully updated',
                 user: {
                     username: newUsername,
+                    first_name: newFirstName,
+                    last_name: newLastName,
+                    email_address: newEmail,
+                    email: newEmail,
                 },
             },
             { status: 200 }
@@ -180,6 +198,6 @@ export async function PATCH(request) {
     }
     catch (error) {
         console.error('User update failed: ', error);
-        return NextResponse.json({ error: 'Failed to update username' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
     }
 }

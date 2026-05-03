@@ -199,15 +199,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-4xl font-black">Welcome back, {dashboard.user.name}</h1>
-            <p className="text-muted">Manage playlists and discover songs to add.</p>
-          </div>
-          <button className="btn btn-outline" onClick={handleBackToMenu}>
-            Menu
-          </button>
-        </div>
+        <h1 className="text-muted">Current Statistics</h1>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="card p-6">
@@ -267,59 +259,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="card p-6">
-          <h2 className="text-2xl font-black mb-4">Add Songs To A Playlist</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <input
-              type="text"
-              placeholder="Search songs by title..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring focus:border-primary bg-background text-foreground"
-            />
-
-            <select
-              value={selectedPlaylistId || ''}
-              onChange={(e) => setSelectedPlaylistId(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring focus:border-primary bg-background text-foreground"
-            >
-              {dashboard.playlists.map((playlist) => (
-                <option key={playlist.playlistId} value={playlist.playlistId}>
-                  {playlist.playlistName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedPlaylistName && (
-            <p className="text-sm text-muted mb-3">Adding to: {selectedPlaylistName}</p>
-          )}
-
-          {addStatus && <p className="text-sm mb-3">{addStatus}</p>}
-
-          <div className="space-y-2">
-            {searching && <p className="text-muted">Searching...</p>}
-            {!searching && query.trim().length >= 2 && searchResults.length === 0 && (
-              <p className="text-muted">No matching songs found.</p>
-            )}
-
-            {searchResults.map((song) => (
-              <div key={song.songId} className="rounded-lg border border-light p-3 flex items-center justify-between gap-3">
-                <p>
-                  {song.title} <span className="text-muted">- {song.artist}</span>
-                </p>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handleAddSong(song.songId)}
-                  disabled={addingSongId === song.songId}
-                >
-                  {addingSongId === song.songId ? 'Adding...' : 'Add'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   );

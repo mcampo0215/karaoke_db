@@ -7,12 +7,15 @@ type User = {
   id: number;
   username: string;
   name: string;
+  email: string;
 };
 
 export default function UserPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [draftUsername, setDraftUsername] = useState('');
+  const [draftName, setDraftName] = useState('');
+  const [draftEmail, setDraftEmail] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,6 +24,10 @@ export default function UserPage() {
 
   function handleBackToLogin() {
     router.push('/login');
+  }
+
+  function handleBackToMenu() {
+    router.push('/menu');
   }
 
   function getErrorMessage(error: unknown) {
@@ -56,10 +63,13 @@ export default function UserPage() {
           id: Number(data.user.id),
           username: data.user.username,
           name: `${data.user.first_name} ${data.user.last_name}`.trim(),
+          email: data.user.email ?? '',
         };
 
         setUser(nextUser);
         setDraftUsername(nextUser.username);
+        setDraftName(nextUser.name);
+        setDraftEmail(nextUser.email);
       } catch (error: unknown) {
         if (!ignore) {
           setStatus(getErrorMessage(error));
@@ -78,17 +88,33 @@ export default function UserPage() {
     };
   }, [router]);
 
-  async function handleUsernameUpdate() {
+  async function handleProfileUpdate() {
     if (!user) {
       return;
     }
 
     const trimmedUsername = draftUsername.trim();
+    const trimmedName = draftName.trim();
+    const trimmedEmail = draftEmail.trim().toLowerCase();
 
     if (!trimmedUsername) {
       setStatus('Username cannot be empty.');
       return;
     }
+
+    if (!trimmedName) {
+      setStatus('Name cannot be empty.');
+      return;
+    }
+
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+    if (!isValidEmail) {
+      setStatus('Please enter a valid email address.');
+      return;
+    }
+
+    const [first_name, ...lastParts] = trimmedName.split(/\s+/);
+    const last_name = lastParts.join(' ');
 
     try {
       setSaving(true);
@@ -97,21 +123,32 @@ export default function UserPage() {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmedUsername }),
+        body: JSON.stringify({
+          username: trimmedUsername,
+          first_name,
+          last_name,
+          email: trimmedEmail,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Could not update username');
+        throw new Error(data.error || 'Could not update profile');
       }
+
+      const updatedName = `${data.user?.first_name ?? first_name} ${data.user?.last_name ?? last_name}`.trim();
 
       setUser({
         ...user,
         username: data.user?.username ?? trimmedUsername,
+        name: updatedName,
+        email: data.user?.email ?? trimmedEmail,
       });
       setDraftUsername(data.user?.username ?? trimmedUsername);
-      setStatus(data.message || 'Username updated.');
+      setDraftName(updatedName);
+      setDraftEmail(data.user?.email ?? trimmedEmail);
+      setStatus(data.message || 'Profile updated.');
     } catch (error: unknown) {
       setStatus(getErrorMessage(error));
     } finally {
@@ -143,6 +180,8 @@ export default function UserPage() {
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       setDraftUsername('');
+      setDraftName('');
+      setDraftEmail('');
       setStatus(data.message || 'Account deleted.');
       setAccountDeleted(true);
     } catch (error: unknown) {
@@ -176,9 +215,7 @@ export default function UserPage() {
         className="pointer-events-none absolute inset-x-0 top-0 h-80 opacity-70"
         style={{
           background:
-            'radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 45%), linear-gradient(180deg, rgba(99,102,241,0.08), transparent)',
-        }}
-      />
+            'radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 45%), linear-gradient(180deg, rgba(99,102,241,0.08), transparent)'}}/>
       <div className="relative mx-auto flex w-full max-w-4xl flex-col gap-8">
         <div className="rounded-[2rem] border border-border/70 bg-surface p-8 shadow-xl">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -187,10 +224,9 @@ export default function UserPage() {
               <h1 className="mt-3 text-4xl font-black">Account Center</h1>
             </div>
             <button
-              className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary/40"
-              onClick={handleBackToLogin}
-            >
-              Back to login
+              className="rounded-full border border-border bg-background/80 px-4 py-2 text-md font-semibold text-primary transition-colors hover:border-primary/40"
+              onClick={handleBackToMenu}>
+              Back to menu
             </button>
           </div>
         </div>
@@ -216,6 +252,10 @@ export default function UserPage() {
                   <p className="text-xs uppercase tracking-[0.2em] text-subtle">Username</p>
                   <p className="mt-2 text-xl font-semibold text-foreground">{user.username}</p>
                 </div>
+                <div className="rounded-2xl border border-border bg-background/70 p-5 shadow-sm sm:col-span-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-subtle">Email</p>
+                  <p className="mt-2 text-xl font-semibold text-foreground">{user.email}</p>
+                </div>
               </div>
             </section>
 
@@ -225,20 +265,32 @@ export default function UserPage() {
               </div>
               <div className="space-y-5 p-8">
                 <div className="rounded-2xl border border-border bg-background/60 p-5">
-                  <label className="block text-sm font-medium text-primary">Update username</label>
+                  <label className="block text-sm font-medium text-primary">Name</label>
+                  <input
+                    type="text"
+                    className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-foreground focus:border-primary focus:outline-none focus:ring"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}/>
+
+                  <label className="mt-4 block text-sm font-medium text-primary">Email</label>
+                  <input
+                    type="email"
+                    className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-foreground focus:border-primary focus:outline-none focus:ring"
+                    value={draftEmail}
+                    onChange={(e) => setDraftEmail(e.target.value)}/>
+
+                  <label className="mt-4 block text-sm font-medium text-primary">Username</label>
                   <input
                     type="text"
                     className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-foreground focus:border-primary focus:outline-none focus:ring"
                     value={draftUsername}
-                    onChange={(e) => setDraftUsername(e.target.value)}
-                  />
+                    onChange={(e) => setDraftUsername(e.target.value)}/>
                   <button
                     type="button"
                     className="mt-4 w-full rounded-xl bg-primary py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={handleUsernameUpdate}
-                    disabled={saving || deleting}
-                  >
-                    {saving ? 'Updating username...' : 'Update username'}
+                    onClick={handleProfileUpdate}
+                    disabled={saving || deleting}>
+                    {saving ? 'Saving changes...' : 'Save profile changes'}
                   </button>
                 </div>
 
@@ -246,8 +298,7 @@ export default function UserPage() {
                   type="button"
                   className="w-full rounded-xl border border-red-400/60 bg-red-100 py-3 font-semibold text-red-700 transition-colors hover:border-red-500 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={handleDeleteAccount}
-                  disabled={saving || deleting}
-                >
+                  disabled={saving || deleting}>
                   {deleting ? 'Deleting account...' : 'Delete account'}
                 </button>
 
@@ -267,8 +318,7 @@ export default function UserPage() {
               <h2 className="text-xl font-bold text-foreground">Your account has been deleted</h2>
               <button
                 className="mt-5 rounded-lg bg-primary px-5 py-2.5 font-semibold text-white transition-opacity hover:opacity-90"
-                onClick={handleBackToLogin}
-              >
+                onClick={handleBackToLogin}>
                 Back to login
               </button>
               {status && <p className="mt-3 text-sm text-muted">{status}</p>}
@@ -279,3 +329,4 @@ export default function UserPage() {
     </div>
   );
 }
+

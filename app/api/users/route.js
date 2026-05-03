@@ -24,22 +24,39 @@ export async function GET() {
 
         //all playlist names
         const [playlistRows] = await pool.query(
-            `SELECT p.user_id, p.playlist_name
+            `SELECT p.user_id, p.playlist_id, p.playlist_name
             FROM playlists p
             ORDER BY p.user_id, created_at DESC, p.playlist_id DESC`
         );
 
         //top 3 playlists per user
         const topPlaylistsByUser = new Map();
+        const topPlaylistObjectsByUser = new Map();
+        const allPlaylistObjectsByUser = new Map();
         for (const row of playlistRows) {
             const userId = Number(row.user_id);
             const name = row.playlist_name;
+            const playlistId = Number(row.playlist_id);
 
             if (!topPlaylistsByUser.has(userId)) topPlaylistsByUser.set(userId, []);
             const list = topPlaylistsByUser.get(userId);
 
+            if (!topPlaylistObjectsByUser.has(userId)) topPlaylistObjectsByUser.set(userId, []);
+            const detailedList = topPlaylistObjectsByUser.get(userId);
+
+            if (!allPlaylistObjectsByUser.has(userId)) allPlaylistObjectsByUser.set(userId, []);
+            const allDetailedList = allPlaylistObjectsByUser.get(userId);
+
             if (list.length < 3 && !list.includes(name)) {
                 list.push(name);
+            }
+
+            if (detailedList.length < 3 && !detailedList.some((playlist) => playlist.playlistId === playlistId)) {
+                detailedList.push({ playlistId, playlistName: name });
+            }
+
+            if (!allDetailedList.some((playlist) => playlist.playlistId === playlistId)) {
+                allDetailedList.push({ playlistId, playlistName: name });
             }
         }
 
@@ -48,6 +65,8 @@ export async function GET() {
             name: u.name,
             playlistsCount: Number(u.playlistsCount),
             topPlaylists: topPlaylistsByUser.get(Number(u.id)) || [],
+            topPlaylistsDetailed: topPlaylistObjectsByUser.get(Number(u.id)) || [],
+            allPlaylistsDetailed: allPlaylistObjectsByUser.get(Number(u.id)) || [],
         }));
         
         return NextResponse.json(payload);

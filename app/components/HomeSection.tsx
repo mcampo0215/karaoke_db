@@ -10,7 +10,6 @@ export default function HomeSection() {
           <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight max-w-4xl mx-auto leading-tight">
             Karaoke with Friends Catalog
           </h1>
-         
         </div>
       </div>
     </div>

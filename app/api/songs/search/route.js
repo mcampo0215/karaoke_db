@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '../../../../lib/db';
 
+//searching songs in search bar  query 
 export async function GET(request) {
   try {
     const cookieUserId = request.cookies.get('karaoke_user_id')?.value;

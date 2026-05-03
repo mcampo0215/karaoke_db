@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "../../../../lib/db";
 
+// POST request for user signup - creates a new user account with the provided email, username, password, first name, and last name.
 export async function POST(request) {
     try {
         const body = await request.json();

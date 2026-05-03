@@ -8,7 +8,7 @@ USE karaoke_db;
 
 -- create the tables for the database
 CREATE TABLE users (
-  user_id           INT            PRIMARY KEY   AUTO_INCREMENT,
+  user_id           INT            PRIMARY KEY   AUTO_INCREMENT NOT NULL,
   email_address		VARCHAR(100)   NOT NULL,
   username          VARCHAR(50)    NOT NULL      UNIQUE,
   password          VARCHAR(60)    NOT NULL,
@@ -17,20 +17,20 @@ CREATE TABLE users (
 );
   
 CREATE TABLE artists ( 
-	artist_id      	   INT            PRIMARY KEY   AUTO_INCREMENT,
+	artist_id      	   INT            PRIMARY KEY   AUTO_INCREMENT NOT NULL,
     artist_stage_name  VARCHAR(255)   NOT NULL,
     birthdate 		   DATE,
     country_of_origin VARCHAR(100)	  NOT NULL	
 ); 
 
 CREATE TABLE genres ( 
-	genre_id      	   INT            PRIMARY KEY   AUTO_INCREMENT,
+	genre_id      	   INT            PRIMARY KEY   AUTO_INCREMENT NOT NULL,
     genre_name  	   VARCHAR(255)   NOT NULL,
     genre_description  TEXT
 ); 
 
 CREATE TABLE songs (
-	song_id      	INT            PRIMARY KEY   AUTO_INCREMENT,
+	song_id      	INT            PRIMARY KEY   AUTO_INCREMENT NOT NULL,
     song_title 		VARCHAR(255)   NOT NULL,
 	artist_id		INT			   NOT NULL,
 	genre_id		INT		       NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE songs (
 );
 
 CREATE TABLE playlists (
-	playlist_id        INT            PRIMARY KEY   AUTO_INCREMENT,
+	playlist_id        INT            PRIMARY KEY   AUTO_INCREMENT NOT NULL,
     user_id			   INT			  NOT NULL, 
     playlist_name 	   VARCHAR(255)   NOT NULL, 
     created_at         DATETIME       DEFAULT CURRENT_TIMESTAMP,
@@ -575,4 +575,175 @@ INSERT INTO song_playlists (playlist_id, song_id) VALUES
 (22, 4),
 (22, 5),   
 (22, 20),  
-(22, 21);  
+(22, 21);
+
+
+
+/************************************************************************
+* View -  community_top_songs
+shows the most liked songs by the community in next karaoke session.
+*************************************************************************/
+CREATE VIEW community_top_songs AS
+SELECT 
+    s.song_title,
+    a.artist_stage_name,
+    COUNT(DISTINCT ki.user_id) AS like_count
+FROM songs s
+JOIN artists a 
+    ON a.artist_id = s.artist_id
+JOIN karaoke_interest ki 
+    ON ki.song_id = s.song_id
+GROUP BY 
+    s.song_id, 
+    s.song_title, 
+    a.artist_stage_name
+ORDER BY like_count DESC;
+
+
+/*************************************************************
+* Function 1 - Get Artist Song Count - 
+how many songs are in the catalog for a specfic artist
+**************************************************************/
+DELIMITER //
+
+CREATE FUNCTION GetArtistSongCount(stats_artist_id INT)
+RETURNS INT DETERMINISTIC READS SQL DATA
+BEGIN
+    DECLARE v_song_count INT DEFAULT 0;
+
+    SELECT COUNT(*)
+    INTO v_song_count
+    FROM songs
+    WHERE artist_id = stats_artist_id;
+
+    RETURN v_song_count;
+END //
+
+DELIMITER ;
+
+/*************************************************************
+* Function 2 - Get Playlist Song Count - 
+how many songs are in a specific playlist
+**************************************************************/
+DELIMITER //
+
+CREATE FUNCTION GetPlaylistSongCount(p_playlist_id INT)
+RETURNS INT
+NOT DETERMINISTIC READS SQL DATA
+BEGIN
+    DECLARE v_song_count INT DEFAULT 0;
+
+    SELECT COUNT(*)
+    INTO v_song_count
+    FROM song_playlists
+    WHERE playlist_id = p_playlist_id;
+
+    RETURN v_song_count;
+END //
+
+DELIMITER ;  
+
+/*************************************************************
+* Trigger 1 - prevent duplicates 
+**************************************************************/
+DELIMITER //
+
+DROP TRIGGER IF EXISTS prevent_duplicate_karaoke_interest //
+
+CREATE TRIGGER prevent_duplicate_karaoke_interest
+BEFORE INSERT ON karaoke_interest
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM karaoke_interest
+        WHERE user_id = NEW.user_id
+          AND song_id = NEW.song_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This user already added this song to karaoke interest';
+    END IF;
+END //
+
+DELIMITER ;
+
+/*************************************************************
+* Stored Procedure 
+**************************************************************/
+DELIMITER //
+
+CREATE PROCEDURE AddSongToKaraokeInterestcommunity_top_songs(
+    IN p_user_id INT,
+    IN p_song_id INT
+)
+BEGIN
+    DECLARE existing_interest INT DEFAULT 0;
+
+    -- Check if this user already added this song to karaoke_interest
+    SELECT COUNT(*) INTO existing_interest
+    FROM karaoke_interest
+    WHERE user_id = p_user_id
+      AND song_id = p_song_id;
+
+    -- If not already added, insert it
+    IF existing_interest = 0 THEN
+        INSERT INTO karaoke_interest (user_id, song_id)
+        VALUES (p_user_id, p_song_id);
+    END IF;
+END//
+
+DELIMITER ;
+
+/*************************************************************
+* Additional Table 
+## creating additional table playlist_audit to log songs when 
+they are added to a playlist 
+**************************************************************/
+CREATE TABLE playlist_audit (
+    audit_id       INT      AUTO_INCREMENT    PRIMARY KEY,
+    playlist_id    INT    NOT NULL,
+    song_id.       INT    NOT NULL,
+    song_title     VARCHAR(255)    NOT NULL,
+    date_added     DATETIME    NOT NULL
+);
+
+/*************************************************************
+* Additional Trigger that goes with playlist_audit
+**************************************************************/
+DELIMITER //
+
+CREATE TRIGGER playlist_audit_trigger
+AFTER INSERT ON song_playlists
+FOR EACH ROW
+BEGIN
+    DECLARE v_song_title VARCHAR(255);
+
+    SELECT song_title
+    INTO v_song_title
+    FROM songs
+    WHERE song_id = NEW.song_id;
+
+    INSERT INTO playlist_audit (playlist_id, song_id, song_title, date_added)
+    VALUES (NEW.playlist_id, NEW.song_id, v_song_title, NOW());
+END //
+
+DELIMITER ;
+
+/*************************************************************
+* Query for Most Popular Genre - tableau report demostration
+**************************************************************/
+SELECT 
+    g.genre_name,
+    COUNT(ki.user_id) AS total_interest
+FROM karaoke_interest ki
+JOIN songs s ON ki.song_id = s.song_id
+JOIN genres g ON s.genre_id = g.genre_id
+GROUP BY g.genre_name;
+
+/*************************************************************
+* Query for Playlist Size Report - tablaeu report demostration 
+**************************************************************/
+SELECT  p.playlist_name, COUNT(sp.song_id) AS song_count
+FROM playlists p
+LEFT JOIN song_playlists sp ON p.playlist_id = sp.playlist_id
+GROUP BY p.playlist_id, p.playlist_name;

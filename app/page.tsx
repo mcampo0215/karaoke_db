@@ -9,6 +9,7 @@ import { User } from './types/user';
 
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
+  const [communitySongCount, setCommunitySongCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
@@ -28,19 +29,33 @@ export default function Home() {
         setLoading(true);
         setError('');
 
-        const res = await fetch('/api/users', { cache: 'no-store' });
-        if (!res.ok) {
-          throw new Error('Request failed: ' + res.status);
+        const [usersRes, communityRes] = await Promise.all([
+          fetch('/api/users', { cache: 'no-store' }),
+          fetch('/api/communityView', { cache: 'no-store' }),
+        ]);
+
+        if (!usersRes.ok) {
+          throw new Error('Request failed: ' + usersRes.status);
         }
 
-        const data = await res.json();
+        const data = await usersRes.json();
         if (!ignore) {
           setUsers(Array.isArray(data) ? data : []);
+        }
+
+        if (communityRes.ok) {
+          const communityData = await communityRes.json();
+          if (!ignore) {
+            setCommunitySongCount(Number(communityData.communitySongCount) || 0);
+          }
+        } else if (!ignore) {
+          setCommunitySongCount(0);
         }
       } catch (err) {
         if (!ignore) {
           setError('Could not load home screen.');
           setUsers([]);
+          setCommunitySongCount(0);
         }
       } finally {
         if (!ignore) {
@@ -104,7 +119,7 @@ export default function Home() {
     <div className="min-h-screen w-full bg-background text-foreground">
       <HomeSection />
       <div className="max-w-7xl mx-auto px-4 pb-20">
-        <StatsSection users={users} />
+        <StatsSection users={users} communitySongCount={communitySongCount} />
         <div className="mt-16">
           <JoinCommunity />
           <UsersGrid

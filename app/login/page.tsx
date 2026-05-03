@@ -46,7 +46,7 @@ export default function LoginPage() {
         );
       }
 
-      router.push('/user');
+      router.push('/menu'); // changing it to /menu since we don't have a user page yet
     } catch (error: unknown) {
       setFormError(getErrorMessage(error));
     } finally {
