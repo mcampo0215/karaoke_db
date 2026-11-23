@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+<img src="docs/readme/hero.gif" alt="Karaoke Database: animated mic illustration" width="1040" />
 
-First, run the development server:
+# Karaoke Database
 
-```bash
+**A small stage for the next idea.**
+
+<img src="docs/readme/stack.svg" alt="Next.js 16 / React 19 / TypeScript" />
+
+[Overview](#overview) &nbsp; · &nbsp; [Run locally](#run-locally) &nbsp; · &nbsp; [Explore the repository](https://github.com/mcampo0215/karaoke_db)
+
+</div>
+
+---
+
+## Overview
+
+An early Next.js scaffold for a karaoke database project. The current home page displays **Welcome to the Karaoke Database**; this repository establishes the app structure and styling toolchain rather than a finished song catalog.
+
+| Start | Build | Extend |
+| :--- | :--- | :--- |
+| A minimal App Router home page. | Next.js, React, TypeScript, and Tailwind CSS tooling. | A small foundation for future karaoke features. |
+
+## Run locally
+
+Install Node.js and npm, then:
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project map
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Source | Responsibility |
+| :--- | :--- |
+| [app/page.tsx](app/page.tsx) | Current welcome page. |
+| [app/layout.tsx](app/layout.tsx) | Root layout and font setup. |
+| [app/globals.css](app/globals.css) | Global styling. |
+| [package.json](package.json) | Scripts and dependencies. |
 
-## Learn More
+## Current scope
 
-To learn more about Next.js, take a look at the following resources:
+Song search, playlists, playback, database persistence, and authentication are not implemented in the current source. The microphone animation is project artwork, not a demonstration of an existing recording feature.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sh
+npm run lint
+npm run build
+npm start
+```
 
-## Deploy on Vercel
+`npm start` serves the production build after it has been created.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<p align="center"><a href="#karaoke-database">Back to the top</a></p>
